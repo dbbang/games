@@ -1,9 +1,29 @@
 "use strict";
 
+let mainMenu = {
+  key: 'mainMenu',
+  active: true,
+  preload: mainMenuPreload,
+  create: mainMenuCreate,
+  update: mainMenuUpdate
+};
+
+let gameScene = {
+  key: 'gameScene',
+  active: false,
+  preload: gameScenePreload,
+  create: gameSceneCreate,
+  update: gameSceneUpdate
+};
+
 const config = {
   type: Phaser.WEBGL,
-  width: 800,
-  height: 600,
+  scale: {
+    width: 800,
+    height: 600,
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH
+  },
   backgroundColor: '#000000',
   physics: {
     default: 'arcade',
@@ -12,10 +32,37 @@ const config = {
       debug: false
     }
   },
-  scene: {
-    preload: preload,
-    create: create,
-    update: update
+  scene: [mainMenu, gameScene]
+}
+
+let mainMenuImage;
+let mainMenuMusic;
+
+function mainMenuPreload() {
+  this.load.image('title', 'title.png');
+  this.load.audio('mainMenuMusic', 'sound/HaroldParanormalInstigatorTheme_Loopable.wav');
+}
+
+function mainMenuCreate() {
+  mainMenuImage = this.add.image(430, 300, 'title');
+  mainMenuMusic = this.sound.add('mainMenuMusic');
+  mainMenuMusic.play(
+    {
+      volume: 0.5, // set to 50% of volume level
+      loop: true // make audio play repeat over and over
+    }
+  );
+
+  cursors = this.input.keyboard.createCursorKeys();
+
+}
+
+function mainMenuUpdate() {
+  if (cursors.space.isDown) {
+    mainMenuMusic.stop();
+
+    game.scene.stop('mainMenu');
+    game.scene.start('gameScene');
   }
 }
 
@@ -38,24 +85,22 @@ let jumpsound;
 let gameOverText;
 let score = 0;
 let scoreText;
-
+    
 const game = new Phaser.Game(config);
 
-function preload() {
-  this.load.image('background', 'sprites/sky.jpg');
+function gameScenePreload() {
   this.load.image('platform', 'sprites/platform.png');
   this.load.image('upperplatform', 'sprites/upperplatform.png');
   this.load.image('spikes', 'sprites/spikes.png')
   this.load.spritesheet('hero', 'sprites/monochrome_tilemap_packed.png', { frameWidth: 16, frameHeight: 16 });
   this.load.spritesheet('baddie', 'sprites/monochrome_tilemap_enemy.png', { frameWidth: 16, frameHeight: 16 });
   this.load.spritesheet('hearts', 'sprites/monochrome_tilemap_packed.png', { frameWidth: 16, frameHeight: 16 });
-  this.load.audio('bgmusic', 'sound/loading.wav')
-  this.load.audio('menumusic', 'sound/start-level.wav')
+  this.load.audio('bgmusic', 'sound/TypeCastTheme_Loopable.wav')
+  this.load.audio('menumusic', 'sound/HaroldParanormalInstigatorTheme_Loopable.wav')
   this.load.audio('jump', 'sound/jump.mp3')
 }
 
-function create() {
-  this.add.image(800, 400, 'background');
+function gameSceneCreate() {
   this.add.image(400, 440, 'platform');
 
   this.physics.world.setBounds(0, 0, 800, 800);
@@ -90,15 +135,15 @@ function create() {
   spike = this.physics.add.staticGroup();
   spike.create(400, 868, 'spikes');
 
-  scoreText = this.add.text(650, 30, 'score: 0', { fontSize: '25px', fill: '#4CBB17', fontFamily: 'Rajdhani' });
+  scoreText = this.add.text(650, 30, 'score: 0', { fontSize: '200', fill: '#4CBB17', fontFamily: 'Archivo Black' });
   scoreText.setScrollFactor(0);
 
   this.time.addEvent({ delay: 4000, callback: addScore, callbackScope: this, loop: true })
 
   function addScore() {
     if (!gameOver) {
-    score += 5;
-    scoreText.setText('score: ' + score);
+      score += 5;
+      scoreText.setText('score: ' + score);
     }
   }
 
@@ -215,7 +260,7 @@ function addEnemy() {
   enemySpeed += 5;
 }
 
-function update() {
+function gameSceneUpdate() {
   if (gameOver) {
     return;
   }
@@ -234,11 +279,11 @@ function update() {
     player.setVelocityX(0);
     player.anims.play('idle');
   }
-  if (cursors.up.isDown) {
+  if (cursors.up.isDown || cursors.space.isDown) {
     player.anims.play('jump');
 
   }
-  if (cursors.up.isDown && player.body.touching.down) {
+  if ((cursors.up.isDown || cursors.space.isDown) && player.body.touching.down) {
     player.setVelocityY(-300);
     player.anims.play('jump', true);
     jumpsound = this.sound.add('jump', { loop: false, delay: 5000 });
@@ -273,7 +318,7 @@ function update() {
     const newVy = Math.sin(newAngle) * newSpeed;
     newEnemy.setVelocity(newVx, newVy);
   }
-  
+
 }
 
 for (let i = 0; i < hearts.length; i++) {
@@ -328,3 +373,4 @@ function spikeTouch(player, spike) {
     enemyTimer.remove();
   }
 }
+
